@@ -1,0 +1,14 @@
+{
+  "name": "one-body-two-souls",
+  "version": "1.5.0",
+  "private": true,
+  "type": "module",
+  "description": "一体双魂：支持同模型或不同模型的双 Agent 讨论与共同记忆",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server.mjs --open",
+    "test": "node --test test/*.test.mjs"
+  }
+}

@@ -1,0 +1,10 @@
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { spawn } from 'node:child_process';
+import { DEFAULTS, loadJson, resolveCodex, codexEnvironment } from './core.mjs';
+const root = path.dirname(fileURLToPath(import.meta.url));
+const config = { ...DEFAULTS, ...loadJson(path.join(root, 'data', 'config.json'), {}) };
+if (process.argv[2] !== 'login') throw new Error('支持的操作：node tools.mjs login');
+const child = spawn(resolveCodex(config), ['login'], { stdio: 'inherit', shell: false, env: codexEnvironment() });
+child.on('error', () => console.error('未找到 Codex。请先在工作台设置中保存 codex.exe 的完整路径。'));
+child.on('close', code => { process.exitCode = code || 0; });

@@ -1,0 +1,4 @@
+@echo off
+setlocal
+cd /d "%~dp0"
+call node-run.cmd tools.mjs login %*

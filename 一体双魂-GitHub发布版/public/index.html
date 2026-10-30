@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>一体双魂 · 双助手工作台</title><link rel="stylesheet" href="/style.css"><script src="/app.js" defer></script></head>
+<body>
+<aside>
+  <div class="brand"><span class="mark">同</span><div><h1>一体双魂</h1><p>Codex × DeepSeek</p></div></div>
+  <div class="intro">两位助手，一份共同记录。<br>从电脑开始，也能在 QQ 继续。</div>
+  <button id="newChat" class="outline">＋ 开始新会话</button>
+  <button id="openTreasures" class="outline treasure-entry">◇ 宝箱 <span id="treasureCount">0</span></button>
+  <div class="side-label">你的助手</div>
+  <div class="person"><span class="avatar codex">G</span><div><strong>GPT · Codex</strong><small>理性、沉稳的灵魂</small></div></div>
+  <div class="person"><span class="avatar deepseek">D</span><div><strong>DeepSeek</strong><small>感性、细腻的灵魂</small></div></div>
+  <div class="connection"><span id="snowDot" class="dot"></span><div><strong>SnowLuma · QQ</strong><small id="snowStatus">尚未连接</small></div></div>
+  <div class="side-bottom"><button id="openAppearance">外观与图标</button><button id="openSettings">连接与设置</button><a href="/api/export" download>导出全部记录 ↗</a><p>本机保存 · Harness 工具协作<br>使用所选助手时，会向它发送最近会话。</p></div>
+</aside>
+<main>
+  <header><div><span class="eyebrow">SHARED WORKSPACE</span><h2>一起把事情想清楚。</h2></div><span class="local-tag">● 本机工作台</span></header>
+  <div class="conversation-bar"><label for="channelSelect">当前会话</label><select id="channelSelect"><option value="private">电脑 / 你的 QQ 私聊</option></select><small id="channelNote">一体双魂，共享当前会话的记忆。</small></div>
+  <div class="brain-bar"><label class="toggle"><input type="checkbox" id="showDialogue"> 在本地显示双魂讨论</label><small>角色讨论摘要仅在电脑端显示，QQ 只收到最终答复。</small><button id="saveTreasure" class="check" type="button">珍藏当前对话</button></div>
+  <div id="notice" role="status" hidden></div>
+  <section id="messages" aria-live="polite" aria-label="聊天记录"></section>
+  <div class="compose-area">
+    <div class="modes" role="group" aria-label="回答模式">
+      <button data-mode="both" class="selected">双魂分别回答</button><button data-mode="team">协作整合</button><button data-mode="codex">GPT · Codex</button><button data-mode="deepseek">DeepSeek</button>
+    </div>
+    <p class="mode-hint" id="modeHint">两位助手读取同一份记录，各自给出答案。</p>
+    <p id="planUsage" class="plan-note" hidden>正在使用 ChatGPT 订阅额度 · <a href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer">管理用量 ↗</a></p>
+    <label class="toggle publish-control" id="publishControl" hidden><input type="checkbox" id="publishToGroup"> 本次回复同步发到当前 QQ 群</label>
+    <form id="chatForm"><label class="sr-only" for="input">你的消息</label><textarea id="input" placeholder="聊一个想法，安排一项工作，或把遇到的问题告诉我们……" maxlength="16000" rows="3"></textarea><div class="compose-bottom"><small>Enter 发送 · Shift + Enter 换行</small><button id="send" type="submit">发送 ↑</button></div></form>
+    <p class="footnote" id="queueStatus">工作台与 QQ 共用记录 · Harness 工具确认仍在原窗口处理</p>
+  </div>
+</main>
+<dialog id="settings">
+  <form id="settingsForm">
+    <div class="dialog-head"><div><span class="eyebrow">CONNECTIONS</span><h2>连接你的助手</h2></div><button type="button" id="closeSettings" aria-label="关闭">×</button></div>
+    <p class="muted">沿用 DeepSeek Harness 的助手、工具和登录；QQ 是可选入口。工具需要确认时，请到 Harness 原窗口处理。</p>
+    <fieldset><legend>01 / DeepSeek</legend>
+      <label>连接方式<select name="deepseekBackend"><option value="harness">沿用 DeepSeek Harness（推荐）</option><option value="api">独立 DeepSeek API（仅文字）</option></select></label>
+      <div id="harnessFields">
+        <label>Harness 桥接地址<input name="harnessUrl" required></label>
+        <label>新会话的工作文件夹（留空使用程序的 data/workspace）<input name="harnessWorkspace" placeholder="例如 D:\我的项目"></label>
+        <label>新会话的助手预设（留空使用 Harness 默认）<input name="harnessPreset" placeholder="例如 standard 或你自定义的预设 ID"></label>
+        <small>第一次使用：运行文件夹里的「安装Harness桥接.cmd」，然后检查连接。插件只增加本机接口，不读取模型密钥或自动批准工具。</small>
+        <button type="button" class="check" id="checkHarness">检查 Harness</button>
+        <hr>
+        <label>可选：接续一个已有 Harness 会话<select id="harnessSession"><option value="">先点击下方“读取已有会话”</option></select></label>
+        <button type="button" class="check" id="loadSessions">读取已有会话</button>
+        <button type="button" class="check" id="linkSession">载入文字记录并接续</button>
+        <small>当前工作台为空时可载入最近 200 条文字，让 Codex 也读到背景；工具细节仍保留在 Harness。</small>
+      </div>
+      <div id="apiFields" hidden>
+      <label>API 密钥<input name="deepseekKey" type="password" autocomplete="new-password" placeholder="首次填写；留空保留已存密钥"></label><small id="keyStatus"></small>
+      <div class="two"><label>接口地址<input name="deepseekUrl" required></label><label>模型<select name="deepseekModel" required><option value="deepseek-flash">DeepSeek · 已保存模型</option></select></label></div>
+      </div>
+    </fieldset>
+    <fieldset><legend>02 / GPT · 接入方式</legend>
+      <label>电脑 / 你的 QQ 私聊<select name="gptBackend"><option value="chatgpt">使用 ChatGPT 订阅（Plus 等）</option><option value="codex">使用本机 Codex</option></select></label>
+      <div id="chatgptFields">
+        <p>可通过 OpenAI 官方登录授权使用订阅额度，无需填写 API 密钥。Plus 各应用共用额度；模型和可用额度以账号授权结果为准。</p>
+        <label>ChatGPT 账号<select id="chatgptAccount"><option value="">添加 ChatGPT 账号</option></select></label>
+        <div class="role-actions"><button type="button" id="loginChatgpt" data-oai-siwc-button>Continue with ChatGPT</button><button type="button" class="check" id="logoutChatgpt">退出当前账号</button><a href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer">管理订阅用量 ↗</a></div>
+        <small id="chatgptStatus">尚未登录。请在 OpenAI 页面亲自登录并授权。</small>
+        <label>电脑 / 私聊的 ChatGPT 模型<select name="chatgptModel"><option value="">使用账号列表中的首个文字模型</option></select></label>
+        <small>完成登录后点击“读取可用模型列表”，选择模型，再保存接入方式。此连接提供文字交流，工作执行仍由 DeepSeek Harness 负责。</small>
+      </div>
+      <div id="codexFields">
+      <label>程序路径<input name="codexPath" placeholder="codex 或 codex.exe 完整路径" required></label>
+      <label>GPT 回答速度<select name="codexReasoningEffort"><option value="low">快速 · 日常聊天</option><option value="medium">标准 · 分析与讨论</option><option value="high">深入 · 复杂问题，等待更久</option><option value="">跟随模型默认</option></select></label>
+      <div class="two"><label>私聊 / 电脑的 GPT 模型<select name="codexModel"><option value="">使用 Codex 默认模型</option></select></label><label>回答超时（秒）<input name="timeoutSeconds" type="number" min="15" max="900" required></label></div>
+      <small>先保存路径，再检查（会发送一次简短自检）。未登录时运行「登录Codex.cmd」。Codex 在此负责文字分析，工作执行交给 Harness 工具。</small><button type="button" class="check" id="checkCodex">检查 Codex 实际回答</button>
+      </div>
+    </fieldset>
+    <fieldset><legend>03 / SnowLuma · 可选 QQ 入口</legend>
+      <label class="toggle"><input name="qqEnabled" type="checkbox"> 开启 QQ 接入（私聊和已允许的群）</label>
+      <label>你的 QQ 号（允许使用助手的人）<input name="ownerQQ" inputmode="numeric" placeholder="填写你自己的 QQ，不是机器人 QQ"></label>
+      <label>正向 WebSocket 地址<input name="snowUrl" required placeholder="ws://127.0.0.1:3001/"></label>
+      <label>该 WebSocket 的 accessToken<input name="snowToken" type="password" autocomplete="new-password" placeholder="留空保留已存令牌；不是管理面板密码"></label><small id="tokenStatus"></small>
+      <small>SnowLuma 中启用 wsServers，role 设为 Universal，messageFormat 设为 array。私聊只响应你的 QQ，机器人自身消息会忽略。</small>
+      <hr>
+      <label class="toggle"><input name="groupEnabled" type="checkbox"> 开启群聊</label>
+      <label>允许接入的群号<input name="allowedGroups" placeholder="多个群号用逗号或空格分隔"></label>
+      <small>已允许群内的任何成员 @机器人即可聊天。群聊只走纯文字模型接口，不进入工具代理，不写代码、不生图、不执行任务。只有你本人可用 /new 重置当前群会话。群与群、群与私聊的记录分别保留。</small>
+      <label>群聊 DeepSeek 灵魂的模型<select name="groupDeepseekModel"><option value="">自动匹配可用 DeepSeek 模型</option></select></label>
+      <label>群聊 GPT 的接入方式<select name="groupGptBackend"><option value="harness">使用 Harness 中配置的 GPT</option><option value="chatgpt">使用我的 ChatGPT 订阅额度</option></select></label>
+      <div id="groupHarnessGpt"><label>群聊 GPT 灵魂的模型<select name="groupGptModel"><option value="">自动匹配可用 GPT 模型</option></select></label></div>
+      <div id="groupChatgpt"><label>群聊 GPT 的 ChatGPT 模型<select name="chatgptGroupModel"><option value="">使用账号列表中的首个文字模型</option></select></label><small>开启后，允许群中成员 @机器人会使用当前登录账号的 ChatGPT 额度。仍只聊天，不进入 Codex 或 Harness 工具代理。</small></div>
+      <button type="button" class="check" id="refreshModels">读取可用模型列表</button>
+      <small id="modelStatus">模型从 Harness 或已授权的 ChatGPT 账号读取。不会把 Codex 工具代理用于群聊。</small>
+      <button type="button" class="check" id="checkSnow">检查 SnowLuma</button>
+    </fieldset>
+    <fieldset><legend>04 / 双 Agent · 角色与模型</legend>
+      <label>运行方式<select name="agentRouting"><option value="legacy">原有连接：DeepSeek + GPT</option><option value="custom">自定义双 Agent（可使用同一个模型）</option></select></label>
+      <small>保留两张独立角色卡与共同宝箱。自定义模式先独立形成角色意见，再由最终发言者审阅双方观点；模型选择不改变角色身份。自定义模式只做文字讨论与分析，原有 Harness 工具工作方式可切回“原有连接”。</small>
+      <div id="agentFields" hidden>
+        <div class="two agent-cards">
+          <div class="agent-card"><h3>Agent A · 感性角色</h3><label>Agent A 名称<input name="deepseekAgentName" maxlength="24" required></label><label>Agent A 接入来源<select name="deepseekAgentBackend"><option value="harness">Harness 中的文字模型</option><option value="deepseek-api">DeepSeek API</option><option value="codex">本地 Codex（仅电脑 / 私聊）</option><option value="chatgpt">ChatGPT 订阅授权</option></select></label><label>Agent A 模型<select name="deepseekAgentModel"><option value="">请选择模型</option></select></label></div>
+          <div class="agent-card"><h3>Agent B · 理性角色</h3><label>Agent B 名称<input name="codexAgentName" maxlength="24" required></label><label>Agent B 接入来源<select name="codexAgentBackend"><option value="harness">Harness 中的文字模型</option><option value="deepseek-api">DeepSeek API</option><option value="codex">本地 Codex（仅电脑 / 私聊）</option><option value="chatgpt">ChatGPT 订阅授权</option></select></label><label>Agent B 模型<select name="codexAgentModel"><option value="">请选择模型</option></select></label></div>
+        </div>
+        <div class="role-actions"><button type="button" class="check" id="refreshAgentModels">读取 Agent 模型列表</button><button type="button" class="check" id="sameAgentModel">让 B 与 A 使用相同模型</button></div>
+        <p id="agentModelStatus" role="status" class="muted"></p>
+        <label class="toggle"><input name="agentGroupRouting" type="checkbox"> 群聊也使用这组 Agent 模型</label>
+        <small>未勾选时，群聊使用上方 QQ 设置中各自的纯文字模型。勾选后，两位必须使用 Harness、DeepSeek API 或 ChatGPT 授权；群聊不会调用本地 Codex。两种方式都不会调用工具。</small>
+      </div>
+    </fieldset>
+    <fieldset><legend>05 / 工作习惯</legend>
+      <label>QQ 默认回答方式<select name="defaultMode"><option value="both">两位分别回答</option><option value="team">协作整合</option><option value="codex">Codex</option><option value="deepseek">DeepSeek</option></select></label>
+      <label class="toggle"><input name="innerDialogue" type="checkbox"> 双魂先交流，再由所选人格回答</label>
+      <small>选择对应角色决定谁最终发言。每次先生成两份简短角色意见，再审阅整合后输出答复；会增加两次模型调用和等待时间。讨论使用文字接口，群聊仍不进入工具代理。</small>
+      <label>讨论读取的最近上下文（字符）<input name="recentContextChars" type="number" min="4000" max="48000"></label>
+      <label class="toggle"><input name="treasuresEnabled" type="checkbox"> 双魂共同判断后自动珍藏，并按话题回忆宝藏</label>
+      <label>什么值得珍藏<textarea name="treasureCriteria" rows="3" maxlength="3000"></textarea></label>
+      <small>宝藏保留日期、摘要和对话原文。私聊和每个群分开保存；每次最多找回 3 件、合计约 6000 字符。开始新会话会保留宝箱。</small>
+    </fieldset>
+    <fieldset><legend>06 / 预载角色卡 · 一体双魂</legend>
+      <small>共同人设描述同一个身体和共同记忆；两张角色卡分别决定 DeepSeek、GPT 的性格与语气。灵魂名称是角色身份，实际模型以下拉选择为准。保存后，下一次发言起使用新设定。</small>
+      <label>共同人设<textarea name="persona" rows="5" maxlength="8000"></textarea></label>
+      <label>Agent A / DeepSeek 灵魂角色卡<textarea name="deepseekRole" rows="5" maxlength="12000"></textarea></label>
+      <label>Agent B / GPT 灵魂角色卡<textarea name="codexRole" rows="5" maxlength="12000"></textarea></label>
+      <div class="role-actions"><button type="button" class="check" id="defaultRoles">载入默认“一体双魂”</button><button type="button" class="check" id="importRoles">导入角色卡</button><a href="/api/roles/export" download>导出已保存角色卡 ↗</a></div>
+      <input type="file" id="rolesFile" accept="application/json,.json" hidden>
+    </fieldset>
+    <p id="settingsStatus" role="status"></p><div class="dialog-actions"><button type="submit">保存并连接</button></div>
+    <p class="muted">Harness 模式可使用原助手工具执行工作，权限沿用原设置；Codex 当前负责分析、审阅和整合。连接信息保存在 data/config.json，请勿分享 data 文件夹。</p>
+  </form>
+</dialog>
+<dialog id="planWelcome" aria-labelledby="planWelcomeTitle"><h2 id="planWelcomeTitle">正在使用你的 ChatGPT 订阅</h2><p>在本程序中启用订阅接入后，符合条件的请求会使用你的 ChatGPT 额度。你可以在 ChatGPT 设置中管理用量和本程序的权限。</p><p><a href="https://chatgpt.com/settings/usage" target="_blank" rel="noreferrer">管理用量 ↗</a></p><button type="button" id="acknowledgePlan">知道了</button></dialog>
+<dialog id="treasuresDialog" class="treasure-dialog"><div class="dialog-head"><div><span class="eyebrow">MEMORY CHEST</span><h2>宝箱</h2><p id="treasureScope" class="muted"></p></div><button type="button" id="closeTreasures" aria-label="关闭宝箱">×</button></div><label>寻找一件宝藏<input id="treasureQuery" type="search" placeholder="搜索标题、标签或对话原文"></label><label class="toggle"><input id="includeArchivedTreasures" type="checkbox"> 包括已移出回忆的宝藏</label><p id="treasureStatus" role="status" class="muted"></p><div id="treasureList"></div></dialog>
+<dialog id="treasureDetail" class="treasure-dialog"><div class="dialog-head"><h2 id="treasureTitle">【宝藏】</h2><button type="button" id="closeTreasureDetail" aria-label="关闭宝藏原文">×</button></div><div id="treasureBody"></div><button type="button" class="check" id="archiveTreasure">移出自动回忆</button><p class="muted">移出后原文继续保存在宝箱，可随时恢复。</p></dialog>
+<dialog id="saveTreasureDialog"><form id="saveTreasureForm"><div class="dialog-head"><h2>把这段对话放进宝箱</h2><button type="button" id="closeSaveTreasure" aria-label="取消珍藏">×</button></div><label>宝藏名字<input name="title" maxlength="80" placeholder="例如：第一次约定一起看星星"></label><label>想记住什么<textarea name="summary" rows="3" maxlength="1200" placeholder="可留空，会保留最近一段对话原文"></textarea></label><p id="saveTreasureStatus" role="status"></p><button type="submit">珍藏</button></form></dialog>
+<dialog id="appearanceDialog" aria-labelledby="appearanceTitle"><div class="dialog-head"><div><span class="eyebrow">MAKE IT YOURS</span><h2 id="appearanceTitle">外观与图标</h2></div><button type="button" id="closeAppearance" aria-label="关闭外观设置">×</button></div><p class="muted">图片只保存在本机。支持 PNG、JPG、WebP、GIF，每张最多 5 MB。修改后立即生效。</p><form id="appearanceForm"><label>工作台名称<input id="appearanceName" maxlength="40" required></label><label>背景显示强度 <output id="strengthValue">30%</output><input id="backgroundStrength" type="range" min="0" max="100" value="30"></label><button type="submit">保存名称和强度</button></form><div id="appearanceSlots"></div><input type="file" id="appearanceFile" accept="image/png,image/jpeg,image/webp,image/gif" hidden><p id="appearanceStatus" role="status" class="muted"></p><button type="button" class="check" id="resetAppearance">恢复默认外观</button></dialog>
+</body></html>
